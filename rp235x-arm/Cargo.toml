@@ -1,0 +1,23 @@
+[package]
+edition = "2021"
+name = "smoltcp-checksum-bench"
+rust-version = "1.82"
+version = "0.1.0"
+
+[dependencies]
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.5"
+critical-section = {version = "1.2.0"}
+defmt = "1.1.0"
+defmt-rtt = "1.2.0"
+panic-halt = "0.2.0"
+rp235x-hal = {version = "0.4.0", features = ["binary-info", "critical-section-impl", "rt", "defmt"]}
+
+checksum = { path = "../checksum"}
+
+rand = { version = "0.10.1", default-features = false }
+
+[profile.release]
+opt-level = "z"
+# opt-level = 3
+debug = 2
