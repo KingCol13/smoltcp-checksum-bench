@@ -1,5 +1,4 @@
 #![no_std]
-
 use byteorder::{ByteOrder, NetworkEndian};
 
 const fn propagate_carries(word: u32) -> u16 {
@@ -92,6 +91,7 @@ pub fn checksum_chunks_exact_no_bigchunk(data: &[u8]) -> u16 {
     propagate_carries(accum)
 }
 
+#[inline]
 pub fn checksum_chunks_exact(data: &[u8]) -> u16 {
     let mut accum = 0;
 
@@ -208,4 +208,101 @@ pub fn checksum_chunks_ne_u16(data: &[u8]) -> u16 {
 
     let val = propagate_carries(accum);
     u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
+pub fn checksum_wide(mut data: &[u8]) -> u16 {
+    // inspired by: https://stackoverflow.com/questions/78889987/how-to-perform-parallel-addition-using-avx-with-carry-overflow-fed-back-into-t
+    // let mut accum: u32 = 0;
+    let mut wide_accum = wide::u32x4::ZERO;
+    let mut wide_carry_accum = wide::u32x4::ZERO;
+
+    let chunks;
+    (chunks, data) = data.as_chunks::<16>();
+    for chunk in chunks {
+        // let u16s: &[u32; 4] = wide::bytemuck::must_cast_ref(chunk);
+        // let vals = wide::u32x4::from(*u16s);
+        let vals: wide::u32x4 = bytemuck::pod_read_unaligned(chunk);
+        let saturated_add = wide_accum.saturating_add(vals);
+        wide_accum += vals;
+
+        // if there was overflow then saturated add will not be equal to wrapping add
+        // equal mask will take max value for each non-equal lane
+        let equal_mask = wide_accum.simd_ne(saturated_add);
+        wide_carry_accum -= equal_mask;
+    }
+
+    // add the carries in, checking for more carries
+    let saturated_add = wide_accum.saturating_add(wide_carry_accum);
+    wide_accum += wide_carry_accum;
+    let equal_mask = wide_accum.simd_ne(saturated_add);
+    wide_accum -= equal_mask;
+
+    let mut accum: u32 = 0;
+    let vals: [u32; 4] = wide_accum.into();
+    for val in vals {
+        // TODO: maybe try SIMD version of propagate_carries to collapse vector?
+        add_assign_with_carry_u32(&mut accum, val);
+    }
+
+    // TODO: fix possibility of accum overflowing here
+
+    // ... take by 2 bytes and sum them.
+    let mut chunks = data.chunks_exact(2);
+    for pair in &mut chunks {
+        accum += u16::from_ne_bytes([pair[0], pair[1]]) as u32;
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&byte) = chunks.remainder().first() {
+        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[cfg(test)]
+mod tests {
+    use wide::u32x4;
+
+    use super::*;
+
+    /// compare all checksum implementations against original
+    /// for given data
+    fn check_checksums(data: &[u8]) {
+        let res_orig = checksum_original(data);
+
+        assert_eq!(checksum_wide(data), res_orig);
+        assert_eq!(checksum_indexed(data), res_orig);
+        assert_eq!(checksum_chunks_exact_no_bigchunk(data), res_orig);
+        assert_eq!(checksum_chunks_exact(data), res_orig);
+        assert_eq!(checksum_sliced_ne(data), res_orig);
+        assert_eq!(checksum_sliced_ne_u16(data), res_orig);
+        assert_eq!(checksum_chunks_ne_u16(data), res_orig);
+        assert_eq!(checksum_wide(data), res_orig);
+    }
+
+    #[test]
+    fn test_16_1() {
+        let data = [254; 32];
+        check_checksums(&data);
+    }
+
+    #[test]
+    fn test_1024() {
+        let data = [254; 1024];
+        check_checksums(&data);
+    }
+
+    #[test]
+    fn test_simd_ne() {
+        let a = u32x4::splat(2);
+        let b = u32x4::from([0, 2, 2, 4]);
+
+        let res = a.simd_ne(b);
+        let expect = u32x4::from([u32::MAX, 0, 0, u32::MAX]);
+
+        assert_eq!(res, expect);
+    }
 }

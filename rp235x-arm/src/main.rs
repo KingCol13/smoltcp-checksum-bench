@@ -22,7 +22,7 @@ pub static IMAGE_DEF: hal::block::ImageDef = hal::block::ImageDef::secure_exe();
 /// an infinite loop. If there is an LED connected to that pin, it will blink.
 #[hal::entry]
 fn main() -> ! {
-    use cortex_m::peripheral::{Peripherals, DWT};
+    use cortex_m::peripheral::{DWT, Peripherals};
     use rand::prelude::*;
 
     let mut peripherals = Peripherals::take().unwrap();
@@ -75,15 +75,21 @@ fn main() -> ! {
         let end = DWT::cycle_count();
         let cycles_chunks_ne_u16 = end.wrapping_sub(start);
 
+        let start = DWT::cycle_count();
+        let sum_wide = checksum::checksum_wide(core::hint::black_box(data));
+        let end = DWT::cycle_count();
+        let cycles_wide = end.wrapping_sub(start);
+
         assert_eq!(sum_original, sum_indexed);
         assert_eq!(sum_original, sum_chunks_exact);
         assert_eq!(sum_original, sum_chunks_exact_no_bigchunk);
         assert_eq!(sum_original, sum_sliced_ne);
         assert_eq!(sum_original, sum_sliced_ne_u16);
         assert_eq!(sum_original, sum_chunks_ne_u16);
+        assert_eq!(sum_original, sum_wide);
 
         defmt::info!(
-            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_u16={=u32} chunks_ne_u16={=u32}",
+            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_u16={=u32} chunks_ne_u16={=u32} wide={=u32}",
             len,
             cycles_original,
             cycles_indexed,
@@ -92,6 +98,7 @@ fn main() -> ! {
             cycles_sliced_ne,
             cycles_sliced_ne_u16,
             cycles_chunks_ne_u16,
+            cycles_wide,
         );
     }
 
