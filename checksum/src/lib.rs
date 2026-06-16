@@ -211,14 +211,13 @@ pub fn checksum_chunks_ne_u16(data: &[u8]) -> u16 {
 }
 
 #[inline(never)]
-pub fn checksum_wide(mut data: &[u8]) -> u16 {
+pub fn checksum_wide(data: &[u8]) -> u16 {
     // inspired by: https://stackoverflow.com/questions/78889987/how-to-perform-parallel-addition-using-avx-with-carry-overflow-fed-back-into-t
     // let mut accum: u32 = 0;
     let mut wide_accum = wide::u32x4::ZERO;
     let mut wide_carry_accum = wide::u32x4::ZERO;
 
-    let chunks;
-    (chunks, data) = data.as_chunks::<16>();
+    let (chunks, tail) = data.as_chunks::<16>();
     for chunk in chunks {
         // let u16s: &[u32; 4] = wide::bytemuck::must_cast_ref(chunk);
         // let vals = wide::u32x4::from(*u16s);
@@ -238,6 +237,7 @@ pub fn checksum_wide(mut data: &[u8]) -> u16 {
     let equal_mask = wide_accum.simd_ne(saturated_add);
     wide_accum -= equal_mask;
 
+    // collapse wide vec into u32
     let mut accum: u32 = 0;
     let vals: [u32; 4] = wide_accum.into();
     for val in vals {
@@ -245,19 +245,22 @@ pub fn checksum_wide(mut data: &[u8]) -> u16 {
         add_assign_with_carry_u32(&mut accum, val);
     }
 
-    // TODO: fix possibility of accum overflowing here
+    // we can add without carry into tail_accum u32 as tail is guaranteed to be short
+    let mut tail_accum: u32 = 0;
 
     // ... take by 2 bytes and sum them.
-    let mut chunks = data.chunks_exact(2);
-    for pair in &mut chunks {
-        accum += u16::from_ne_bytes([pair[0], pair[1]]) as u32;
+    let (chunks, tail) = tail.as_chunks::<2>();
+    for pair in chunks {
+        // tail_accum += u16::from_ne_bytes([pair[0], pair[1]]) as u32;
+        tail_accum += u16::from_ne_bytes(*pair) as u32;
     }
 
     // Add the last remaining odd byte, if any.
-    if let Some(&byte) = chunks.remainder().first() {
-        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    if let Some(&byte) = tail.first() {
+        tail_accum += u16::from_ne_bytes([byte, 0]) as u32;
     }
 
+    add_assign_with_carry_u32(&mut accum, tail_accum);
     let val = propagate_carries(accum);
     u16::from_be_bytes(val.to_ne_bytes())
 }
