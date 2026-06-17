@@ -205,6 +205,52 @@ pub fn checksum_sliced_ne_sep(mut data: &[u8]) -> u16 {
 }
 
 #[inline(never)]
+pub fn checksum_sliced_ne_sep_unroll(mut data: &[u8]) -> u16 {
+    let mut accum: u32 = 0;
+
+    let mut accum2: u32 = 0;
+    let mut accum_carry: u32 = 0;
+    let mut accum_carry2: u32 = 0;
+
+    // Sum as much as possible in 4 byte chunks
+    const CHUNK_SIZE: usize = 8;
+    while data.len() >= CHUNK_SIZE {
+        let val = ne_read_u32(data);
+        let val2 = ne_read_u32(&data[4..]);
+
+        let carry;
+        let carry2;
+
+        (accum, carry) = accum.overflowing_add(val);
+        accum_carry += carry as u32;
+
+        (accum2, carry2) = accum2.overflowing_add(val2);
+        accum_carry2 += carry2 as u32;
+
+        data = &data[CHUNK_SIZE..];
+    }
+
+    add_assign_with_carry_u32(&mut accum2, accum_carry2);
+    add_assign_with_carry_u32(&mut accum, accum_carry);
+    add_assign_with_carry_u32(&mut accum, accum2);
+
+    // Sum the rest that does not fit the last 32-byte chunk,
+    // taking by 2 bytes.
+    while data.len() >= 2 {
+        add_assign_with_carry_u32(&mut accum, ne_read_u16(data) as u32);
+        data = &data[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&value) = data.first() {
+        add_assign_with_carry_u32(&mut accum, ne_read_u16(&[value, 0]) as u32);
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
 pub fn checksum_chunks_ne_sep(mut data: &[u8]) -> u16 {
     let mut accum: u32 = 0;
     let mut accum_carry: u32 = 0;
@@ -270,6 +316,35 @@ pub fn checksum_chunks_ne_u16(data: &[u8]) -> u16 {
 
     // Add the last remaining odd byte, if any.
     if let Some(&byte) = chunks.remainder().first() {
+        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
+pub fn checksum_chunks_ne_u16_unroll(data: &[u8]) -> u16 {
+    let mut accum: u32 = 0;
+    let mut accum2: u32 = 0;
+
+    // ... take by 2 bytes and sum them.
+    let mut chunks = data.chunks_exact(4);
+    for pair in &mut chunks {
+        accum += u16::from_ne_bytes([pair[0], pair[1]]) as u32;
+        accum2 += u16::from_ne_bytes([pair[2], pair[3]]) as u32;
+    }
+
+    accum += accum2;
+
+    let mut remainder = chunks.remainder();
+    if remainder.len() >= 2 {
+        accum += u16::from_ne_bytes([remainder[0], remainder[1]]) as u32;
+        remainder = &remainder[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&byte) = remainder.first() {
         accum += u16::from_ne_bytes([byte, 0]) as u32;
     }
 
@@ -349,15 +424,35 @@ mod tests {
         assert_eq!(checksum_chunks_exact(data), res_orig);
         assert_eq!(checksum_sliced_ne(data), res_orig);
         assert_eq!(checksum_sliced_ne_sep(data), res_orig);
+        assert_eq!(checksum_sliced_ne_sep_unroll(data), res_orig);
         assert_eq!(checksum_chunks_ne_sep(data), res_orig);
         assert_eq!(checksum_sliced_ne_u16(data), res_orig);
         assert_eq!(checksum_chunks_ne_u16(data), res_orig);
+        assert_eq!(checksum_chunks_ne_u16_unroll(data), res_orig);
         assert_eq!(checksum_wide(data), res_orig);
     }
 
     #[test]
-    fn test_16_1() {
+    fn test_32_1() {
         let data = [254; 32];
+        check_checksums(&data);
+    }
+
+    #[test]
+    fn test_33_1() {
+        let data = [254; 33];
+        check_checksums(&data);
+    }
+
+    #[test]
+    fn test_35_1() {
+        let data = [254; 35];
+        check_checksums(&data);
+    }
+
+    #[test]
+    fn test_37_1() {
+        let data = [254; 37];
         check_checksums(&data);
     }
 

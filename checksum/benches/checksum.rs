@@ -22,6 +22,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("sliced_ne_sep 64", |b| b.iter(|| checksum::checksum_sliced_ne_sep(black_box(&data[..64]))));
     c.bench_function("sliced_ne_sep 1024", |b| b.iter(|| checksum::checksum_sliced_ne_sep(black_box(&data[..1024]))));
 
+    c.bench_function("sliced_ne_sep_unroll 64", |b| b.iter(|| checksum::checksum_sliced_ne_sep_unroll(black_box(&data[..64]))));
+    c.bench_function("sliced_ne_sep_unroll 1024", |b| b.iter(|| checksum::checksum_sliced_ne_sep_unroll(black_box(&data[..1024]))));
+
     c.bench_function("chunks_ne_sep 64", |b| b.iter(|| checksum::checksum_chunks_ne_sep(black_box(&data[..64]))));
     c.bench_function("chunks_ne_sep 1024", |b| b.iter(|| checksum::checksum_chunks_ne_sep(black_box(&data[..1024]))));
 
@@ -30,6 +33,9 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("chunks_ne_u16 64", |b| b.iter(|| checksum::checksum_chunks_ne_u16(black_box(&data[..64]))));
     c.bench_function("chunks_ne_u16 1024", |b| b.iter(|| checksum::checksum_chunks_ne_u16(black_box(&data[..1024]))));
+
+    c.bench_function("chunks_ne_u16_unroll 64", |b| b.iter(|| checksum::checksum_chunks_ne_u16_unroll(black_box(&data[..64]))));
+    c.bench_function("chunks_ne_u16_unroll 1024", |b| b.iter(|| checksum::checksum_chunks_ne_u16_unroll(black_box(&data[..1024]))));
 
     c.bench_function("wide 64", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..64]))));
     c.bench_function("wide 1024", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..1024]))));
