@@ -66,6 +66,11 @@ fn main() -> ! {
         let cycles_sliced_ne = end.wrapping_sub(start);
 
         let start = DWT::cycle_count();
+        let sum_sliced_ne_sep = checksum::checksum_sliced_ne_sep(core::hint::black_box(data));
+        let end = DWT::cycle_count();
+        let cycles_sliced_ne_sep = end.wrapping_sub(start);
+
+        let start = DWT::cycle_count();
         let sum_sliced_ne_u16 = checksum::checksum_sliced_ne_u16(core::hint::black_box(data));
         let end = DWT::cycle_count();
         let cycles_sliced_ne_u16 = end.wrapping_sub(start);
@@ -84,18 +89,20 @@ fn main() -> ! {
         assert_eq!(sum_original, sum_chunks_exact);
         assert_eq!(sum_original, sum_chunks_exact_no_bigchunk);
         assert_eq!(sum_original, sum_sliced_ne);
+        assert_eq!(sum_original, sum_sliced_ne_sep);
         assert_eq!(sum_original, sum_sliced_ne_u16);
         assert_eq!(sum_original, sum_chunks_ne_u16);
         assert_eq!(sum_original, sum_wide);
 
         defmt::info!(
-            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_u16={=u32} chunks_ne_u16={=u32} wide={=u32}",
+            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_sep={=u32} sliced_ne_u16={=u32} chunks_ne_u16={=u32} wide={=u32}",
             len,
             cycles_original,
             cycles_indexed,
             cycles_chunks_exact,
             cycles_chunks_exact_no_bigchunk,
             cycles_sliced_ne,
+            cycles_sliced_ne_sep,
             cycles_sliced_ne_u16,
             cycles_chunks_ne_u16,
             cycles_wide,

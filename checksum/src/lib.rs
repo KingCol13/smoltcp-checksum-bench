@@ -171,6 +171,40 @@ pub fn checksum_sliced_ne(mut data: &[u8]) -> u16 {
 }
 
 #[inline(never)]
+pub fn checksum_sliced_ne_sep(mut data: &[u8]) -> u16 {
+    let mut accum: u32 = 0;
+    let mut accum_carry: u32 = 0;
+
+    // Sum as much as possible in 4 byte chunks
+    const CHUNK_SIZE: usize = 4;
+    while data.len() >= CHUNK_SIZE {
+        let val = ne_read_u32(data);
+        let carry;
+        (accum, carry) = accum.overflowing_add(val);
+        accum_carry += carry as u32;
+
+        data = &data[CHUNK_SIZE..];
+    }
+
+    add_assign_with_carry_u32(&mut accum, accum_carry);
+
+    // Sum the rest that does not fit the last 32-byte chunk,
+    // taking by 2 bytes.
+    if data.len() >= 2 {
+        add_assign_with_carry_u32(&mut accum, ne_read_u16(data) as u32);
+        data = &data[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&value) = data.first() {
+        add_assign_with_carry_u32(&mut accum, ne_read_u16(&[value, 0]) as u32);
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
 pub fn checksum_sliced_ne_u16(mut data: &[u8]) -> u16 {
     let mut accum: u32 = 0;
 
@@ -281,6 +315,7 @@ mod tests {
         assert_eq!(checksum_chunks_exact_no_bigchunk(data), res_orig);
         assert_eq!(checksum_chunks_exact(data), res_orig);
         assert_eq!(checksum_sliced_ne(data), res_orig);
+        assert_eq!(checksum_sliced_ne_sep(data), res_orig);
         assert_eq!(checksum_sliced_ne_u16(data), res_orig);
         assert_eq!(checksum_chunks_ne_u16(data), res_orig);
         assert_eq!(checksum_wide(data), res_orig);

@@ -19,6 +19,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("sliced_ne 64", |b| b.iter(|| checksum::checksum_sliced_ne(black_box(&data[..64]))));
     c.bench_function("sliced_ne 1024", |b| b.iter(|| checksum::checksum_sliced_ne(black_box(&data[..1024]))));
 
+    c.bench_function("sliced_ne_sep 64", |b| b.iter(|| checksum::checksum_sliced_ne_sep(black_box(&data[..64]))));
+    c.bench_function("sliced_ne_sep 1024", |b| b.iter(|| checksum::checksum_sliced_ne_sep(black_box(&data[..1024]))));
+
     c.bench_function("sliced_ne_u16 64", |b| b.iter(|| checksum::checksum_sliced_ne_u16(black_box(&data[..64]))));
     c.bench_function("sliced_ne_u16 1024", |b| b.iter(|| checksum::checksum_sliced_ne_u16(black_box(&data[..1024]))));
 
