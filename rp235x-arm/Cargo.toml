@@ -17,8 +17,10 @@ checksum = { path = "../checksum"}
 rand = { version = "0.10.1", default-features = false }
 
 [profile.release]
-# z opt-level recommended for embedded targets
+# s or z opt-level recommended for embedded targets
+# s gives me the best performance for an embassy-based UDP benchmark with
+# smoltcp before checksum optimization
 # https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html
-opt-level = "z"
+opt-level = "s"
 # opt-level = 3
 debug = 2
