@@ -441,8 +441,6 @@ pub fn checksum_wide(data: &[u8]) -> u16 {
 
 #[inline(never)]
 pub fn checksum_wide_u16(data: &[u8]) -> u16 {
-    // inspired by: https://stackoverflow.com/questions/78889987/how-to-perform-parallel-addition-using-avx-with-carry-overflow-fed-back-into-t
-    // let mut accum: u32 = 0;
     let mut wide_accum = wide::u32x4::ZERO;
 
     let (chunks, tail) = data.as_chunks::<8>();
