@@ -439,6 +439,43 @@ pub fn checksum_wide(data: &[u8]) -> u16 {
     u16::from_be_bytes(val.to_ne_bytes())
 }
 
+#[inline(never)]
+pub fn checksum_wide_u16(data: &[u8]) -> u16 {
+    // inspired by: https://stackoverflow.com/questions/78889987/how-to-perform-parallel-addition-using-avx-with-carry-overflow-fed-back-into-t
+    // let mut accum: u32 = 0;
+    let mut wide_accum = wide::u32x4::ZERO;
+
+    let (chunks, tail) = data.as_chunks::<8>();
+    for chunk in chunks {
+        let val_0: u16 = ne_read_u16(chunk);
+        let val_1: u16 = ne_read_u16(&chunk[2..]);
+        let val_2: u16 = ne_read_u16(&chunk[4..]);
+        let val_3: u16 = ne_read_u16(&chunk[6..]);
+
+        let vals = wide::u32x4::from([val_0 as u32, val_1 as u32, val_2 as u32, val_3 as u32]);
+
+        wide_accum += vals;
+    }
+
+    // collapse wide vec into u32
+    let mut accum: u32 = wide_accum.reduce_add();
+
+    // ... take by 2 bytes and sum them.
+    let (chunks, tail) = tail.as_chunks::<2>();
+    for pair in chunks {
+        // tail_accum += u16::from_ne_bytes([pair[0], pair[1]]) as u32;
+        accum += u16::from_ne_bytes(*pair) as u32;
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&byte) = tail.first() {
+        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
 #[cfg(test)]
 mod tests {
     use wide::u32x4;
@@ -463,6 +500,7 @@ mod tests {
         assert_eq!(checksum_chunks_ne_u16(data), res_orig);
         assert_eq!(checksum_chunks_ne_u16_unroll(data), res_orig);
         assert_eq!(checksum_wide(data), res_orig);
+        assert_eq!(checksum_wide_u16(data), res_orig);
     }
 
     #[test]

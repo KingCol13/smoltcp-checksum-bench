@@ -43,6 +43,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("wide 64", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..64]))));
     c.bench_function("wide 1024", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..1024]))));
 
+    c.bench_function("wide_u16 64", |b| b.iter(|| checksum::checksum_wide_u16(black_box(&data[..64]))));
+    c.bench_function("wide_u16 1024", |b| b.iter(|| checksum::checksum_wide_u16(black_box(&data[..1024]))));
+
 }
 
 criterion_group!(benches, criterion_benchmark);
