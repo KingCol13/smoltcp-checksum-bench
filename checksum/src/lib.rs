@@ -338,7 +338,6 @@ pub fn checksum_sliced_ne_u16_unroll(mut data: &[u8]) -> u16 {
 
 #[inline(never)]
 pub fn checksum_sliced_ne_u16_unroll_same(mut data: &[u8]) -> u16 {
-    // checksum_sliced_ne_u16_unroll
     let mut accum: u32 = 0;
 
     // Sum as much as possible in 4 byte chunks
@@ -367,7 +366,6 @@ pub fn checksum_sliced_ne_u16_unroll_same(mut data: &[u8]) -> u16 {
 
 #[inline(never)]
 pub fn checksum_sliced_ne_u16_double_unroll_same(mut data: &[u8]) -> u16 {
-    // checksum_sliced_ne_u16_unroll
     let mut accum: u32 = 0;
 
     // Sum as much as possible in 8 byte chunks
