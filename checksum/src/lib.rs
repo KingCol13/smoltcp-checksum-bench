@@ -337,6 +337,66 @@ pub fn checksum_sliced_ne_u16_unroll(mut data: &[u8]) -> u16 {
 }
 
 #[inline(never)]
+pub fn checksum_sliced_ne_u16_unroll_same(mut data: &[u8]) -> u16 {
+    // checksum_sliced_ne_u16_unroll
+    let mut accum: u32 = 0;
+
+    // Sum as much as possible in 4 byte chunks
+    const CHUNK_SIZE: usize = 4;
+    while data.len() >= CHUNK_SIZE {
+        accum += u16::from_ne_bytes([data[0], data[1]]) as u32;
+        accum += u16::from_ne_bytes([data[2], data[3]]) as u32;
+
+        data = &data[CHUNK_SIZE..];
+    }
+
+    if data.len() >= 2 {
+        accum += u16::from_ne_bytes([data[0], data[1]]) as u32;
+        data = &data[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&byte) = data.first() {
+        // accum += u16::from_ne_bytes([byte, 0]) as u32;
+        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
+pub fn checksum_sliced_ne_u16_double_unroll_same(mut data: &[u8]) -> u16 {
+    // checksum_sliced_ne_u16_unroll
+    let mut accum: u32 = 0;
+
+    // Sum as much as possible in 8 byte chunks
+    const CHUNK_SIZE: usize = 8;
+    while data.len() >= CHUNK_SIZE {
+        accum += u16::from_ne_bytes([data[0], data[1]]) as u32;
+        accum += u16::from_ne_bytes([data[2], data[3]]) as u32;
+        accum += u16::from_ne_bytes([data[4], data[5]]) as u32;
+        accum += u16::from_ne_bytes([data[6], data[7]]) as u32;
+
+        data = &data[CHUNK_SIZE..];
+    }
+
+    while data.len() >= 2 {
+        accum += u16::from_ne_bytes([data[0], data[1]]) as u32;
+        data = &data[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&byte) = data.first() {
+        // accum += u16::from_ne_bytes([byte, 0]) as u32;
+        accum += u16::from_ne_bytes([byte, 0]) as u32;
+    }
+
+    let val = propagate_carries(accum);
+    u16::from_be_bytes(val.to_ne_bytes())
+}
+
+#[inline(never)]
 pub fn checksum_chunks_ne_u16(data: &[u8]) -> u16 {
     let mut accum: u32 = 0;
 
@@ -495,6 +555,8 @@ mod tests {
         assert_eq!(checksum_chunks_ne_sep(data), res_orig);
         assert_eq!(checksum_sliced_ne_u16(data), res_orig);
         assert_eq!(checksum_sliced_ne_u16_unroll(data), res_orig);
+        assert_eq!(checksum_sliced_ne_u16_unroll_same(data), res_orig);
+        assert_eq!(checksum_sliced_ne_u16_double_unroll_same(data), res_orig);
         assert_eq!(checksum_chunks_ne_u16(data), res_orig);
         assert_eq!(checksum_chunks_ne_u16_unroll(data), res_orig);
         assert_eq!(checksum_wide(data), res_orig);
