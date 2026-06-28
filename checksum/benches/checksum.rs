@@ -49,6 +49,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("full_indexed 64", |b| b.iter(|| checksum::checksum_full_indexed(black_box(&data[..64]))));
     c.bench_function("full_indexed 1024", |b| b.iter(|| checksum::checksum_full_indexed(black_box(&data[..1024]))));
 
+    c.bench_function("muck_chunks_unroll 64", |b| b.iter(|| checksum::checksum_muck_chunks_unroll(black_box(&data[..64]))));
+    c.bench_function("muck_chunks_unroll 1024", |b| b.iter(|| checksum::checksum_muck_chunks_unroll(black_box(&data[..1024]))));
+
     c.bench_function("wide 64", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..64]))));
     c.bench_function("wide 1024", |b| b.iter(|| checksum::checksum_wide(black_box(&data[..1024]))));
 
