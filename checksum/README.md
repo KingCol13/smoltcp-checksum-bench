@@ -18,6 +18,11 @@ cargo install cross --git https://github.com/cross-rs/cross
 RUSTFLAGS="-C target-cpu=arm1176jzf-s" cross bench --no-run --target arm-unknown-linux-musleabihf
 ```
 
+or for raspberry pi zero 2:
+```bash
+RUSTFLAGS="-C target-cpu=cortex-a53" cross bench --no-run --target aarch64-unknown-linux-gnu
+```
+
 I can then `scp` the built benchmark binary to the pi and run there.
 
 I need to check if I should pass an `mcpu` LLVM arg.
