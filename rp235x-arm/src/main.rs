@@ -121,6 +121,11 @@ fn main() -> ! {
         let cycles_muck_chunks_unroll = end.wrapping_sub(start);
 
         let start = DWT::cycle_count();
+        let sum_into_chunks_unroll = checksum::checksum_into_chunks_unroll(core::hint::black_box(data));
+        let end = DWT::cycle_count();
+        let cycles_into_chunks_unroll = end.wrapping_sub(start);
+
+        let start = DWT::cycle_count();
         let sum_wide = checksum::checksum_wide(core::hint::black_box(data));
         let end = DWT::cycle_count();
         let cycles_wide = end.wrapping_sub(start);
@@ -145,11 +150,12 @@ fn main() -> ! {
         assert_eq!(sum_original, sum_chunks_ne_u16_unroll);
         assert_eq!(sum_original, sum_full_indexed);
         assert_eq!(sum_original, sum_muck_chunks_unroll);
+        assert_eq!(sum_original, sum_into_chunks_unroll);
         assert_eq!(sum_original, sum_wide);
         assert_eq!(sum_original, sum_wide_u16);
 
         defmt::info!(
-            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_sep={=u32} sliced_ne_sep_unroll={=u32} chunks_ne_sep={=u32} sliced_ne_u16={=u32} sliced_ne_u16_unroll={=u32} sliced_ne_u16_unroll_same={=u32} sliced_ne_u16_double_unroll_same={=u32} chunks_ne_u16={=u32} chunks_ne_u16_unroll={=u32} full_indexed={=u32} chunks_muck_unroll={=u32} wide={=u32} wide_u16={=u32}",
+            "len={} original={=u32} indexed={=u32} chunks_exact={=u32} chunks_exact_no_bigchunk={=u32} sliced_ne={=u32} sliced_ne_sep={=u32} sliced_ne_sep_unroll={=u32} chunks_ne_sep={=u32} sliced_ne_u16={=u32} sliced_ne_u16_unroll={=u32} sliced_ne_u16_unroll_same={=u32} sliced_ne_u16_double_unroll_same={=u32} chunks_ne_u16={=u32} chunks_ne_u16_unroll={=u32} full_indexed={=u32} muck_chunks_unroll={=u32} into_chunks_unroll={=u32} wide={=u32} wide_u16={=u32}",
             len,
             cycles_original,
             cycles_indexed,
@@ -167,6 +173,7 @@ fn main() -> ! {
             cycles_chunks_ne_u16_unroll,
             cycles_full_indexed,
             cycles_muck_chunks_unroll,
+            cycles_into_chunks_unroll,
             cycles_wide,
             cycles_wide_u16,
         );

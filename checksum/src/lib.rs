@@ -493,6 +493,33 @@ pub fn checksum_muck_chunks_unroll(data: &[u8]) -> u16 {
 }
 
 #[inline(never)]
+pub fn checksum_into_chunks_unroll(data: &[u8]) -> u16 {
+    let mut accum: u32 = 0;
+
+    let (chunks, mut rem) = data.as_chunks::<4>();
+    for chunk in chunks {
+        let val_0 = u16::from_ne_bytes(chunk[..2].try_into().unwrap());
+        let val_1 = u16::from_ne_bytes(chunk[2..4].try_into().unwrap());
+        accum += val_0 as u32;
+        accum += val_1 as u32;
+    }
+
+    if rem.len() >= 2 {
+        let val = u16::from_ne_bytes(rem[..2].try_into().unwrap());
+        accum += val as u32;
+        rem = &rem[2..];
+    }
+
+    // Add the last remaining odd byte, if any.
+    if let Some(&value) = rem.first() {
+        accum += u16::from_ne_bytes([value, 0]) as u32;
+    }
+
+    let collapsed = propagate_carries(accum);
+    u16::from_be(collapsed)
+}
+
+#[inline(never)]
 pub fn checksum_wide(data: &[u8]) -> u16 {
     // inspired by: https://stackoverflow.com/questions/78889987/how-to-perform-parallel-addition-using-avx-with-carry-overflow-fed-back-into-t
     // let mut accum: u32 = 0;
@@ -609,6 +636,7 @@ mod tests {
         assert_eq!(checksum_chunks_ne_u16_unroll(data), res_orig);
         assert_eq!(checksum_full_indexed(data), res_orig);
         assert_eq!(checksum_muck_chunks_unroll(data), res_orig);
+        assert_eq!(checksum_into_chunks_unroll(data), res_orig);
         assert_eq!(checksum_wide(data), res_orig);
         assert_eq!(checksum_wide_u16(data), res_orig);
     }
