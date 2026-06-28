@@ -50,15 +50,15 @@ fn main() -> ! {
         let cycles_indexed = end.wrapping_sub(start);
 
         let start = DWT::cycle_count();
-        let sum_chunks_exact = checksum::checksum_chunks_exact(data);
-        let end = DWT::cycle_count();
-        let cycles_chunks_exact = end.wrapping_sub(start);
-
-        let start = DWT::cycle_count();
         let sum_chunks_exact_no_bigchunk =
             checksum::checksum_chunks_exact_no_bigchunk(core::hint::black_box(data));
         let end = DWT::cycle_count();
         let cycles_chunks_exact_no_bigchunk = end.wrapping_sub(start);
+
+        let start = DWT::cycle_count();
+        let sum_chunks_exact = checksum::checksum_chunks_exact(data);
+        let end = DWT::cycle_count();
+        let cycles_chunks_exact = end.wrapping_sub(start);
 
         let start = DWT::cycle_count();
         let sum_sliced_ne = checksum::checksum_sliced_ne(core::hint::black_box(data));
