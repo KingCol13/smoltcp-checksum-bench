@@ -1,6 +1,6 @@
 # smoltcp-checksum-bench-rp2350
 
-Run:
+Run RISC-V:
 ```bash
 cargo run-riscv --release
 ```
@@ -10,7 +10,14 @@ Connect minicom:
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
-typing should then cause the times to be printed.
+Typing "r" will reboot the pi, allowing it to be re-flashed.
+
+Typing any other character causes the times to be printed.
+
+Run ARM:
+```bash
+cargo run-arm --release
+```
 
 # Attribution
 

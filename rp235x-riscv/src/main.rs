@@ -50,7 +50,89 @@ where
     let sum = checksum_impl(core::hint::black_box(&data));
     let end = timer.get_counter_low();
 
+    core::hint::black_box(sum);
+
     end.wrapping_sub(start)
+}
+
+fn time_and_write_string<const N: usize, D: hal::timer::TimerDevice>(
+    data: &[u8],
+    timer: hal::Timer<D>,
+    string: &mut String<N>,
+) -> core::fmt::Result {
+    let time_original = time_checksum(&checksum::checksum_original, &data, timer);
+    let time_indexed = time_checksum(&checksum::checksum_indexed, &data, timer);
+    let time_chunks_exact_no_bigchunk =
+        time_checksum(&checksum::checksum_chunks_exact_no_bigchunk, &data, timer);
+    let time_chunks_exact = time_checksum(&checksum::checksum_chunks_exact, &data, timer);
+    let time_sliced_ne = time_checksum(&checksum::checksum_sliced_ne, &data, timer);
+    let time_sliced_ne_sep = time_checksum(&checksum::checksum_sliced_ne_sep, &data, timer);
+    let time_sliced_ne_sep_unroll =
+        time_checksum(&checksum::checksum_sliced_ne_sep_unroll, &data, timer);
+    let time_chunks_ne_sep = time_checksum(&checksum::checksum_chunks_ne_sep, &data, timer);
+    let time_sliced_ne_u16 = time_checksum(&checksum::checksum_sliced_ne_u16, &data, timer);
+    let time_sliced_ne_u16_unroll =
+        time_checksum(&checksum::checksum_sliced_ne_u16_unroll, &data, timer);
+    let time_sliced_ne_u16_unroll_same =
+        time_checksum(&checksum::checksum_sliced_ne_u16_unroll_same, &data, timer);
+    let time_sliced_ne_u16_double_unroll_same = time_checksum(
+        &checksum::checksum_sliced_ne_u16_double_unroll_same,
+        &data,
+        timer,
+    );
+    let time_chunks_ne_u16 = time_checksum(&checksum::checksum_chunks_ne_u16, &data, timer);
+    let time_chunks_ne_u16_unroll =
+        time_checksum(&checksum::checksum_chunks_ne_u16_unroll, &data, timer);
+    let time_full_indexed = time_checksum(&checksum::checksum_full_indexed, &data, timer);
+    let time_muck_chunks_unroll =
+        time_checksum(&checksum::checksum_muck_chunks_unroll, &data, timer);
+    let time_into_chunks_unroll =
+        time_checksum(&checksum::checksum_into_chunks_unroll, &data, timer);
+    let time_wide = time_checksum(&checksum::checksum_wide, &data, timer);
+    let time_wide_u16 = time_checksum(&checksum::checksum_wide_u16, &data, timer);
+
+    write!(
+        string,
+        "time_original: {}\r\n\
+        time_indexed: {}\r\n\
+        time_chunks_exact: {}\r\n\
+        time_chunks_exact_no_bigchunk: {}\r\n\
+        time_sliced_ne: {}\r\n\
+        time_sliced_ne_sep: {}\r\n\
+        time_sliced_ne_sep_unroll: {}\r\n\
+        time_chunks_ne_sep: {}\r\n\
+        time_sliced_ne_u16: {}\r\n\
+        time_sliced_ne_u16_unroll: {}\r\n\
+        time_sliced_ne_u16_unroll_same: {}\r\n\
+        time_sliced_ne_u16_double_unroll_same: {}\r\n\
+        time_chunks_ne_u16: {}\r\n\
+        time_chunks_ne_u16_unroll: {}\r\n\
+        time_full_indexed: {}\r\n\
+        time_muck_chunks_unroll: {}\r\n\
+        time_into_chunks_unroll: {}\r\n\
+        time_wide: {}\r\n\
+        time_wide_u16: {}\r\n
+        \r\n",
+        time_original,
+        time_indexed,
+        time_chunks_exact,
+        time_chunks_exact_no_bigchunk,
+        time_sliced_ne,
+        time_sliced_ne_sep,
+        time_sliced_ne_sep_unroll,
+        time_chunks_ne_sep,
+        time_sliced_ne_u16,
+        time_sliced_ne_u16_unroll,
+        time_sliced_ne_u16_unroll_same,
+        time_sliced_ne_u16_double_unroll_same,
+        time_chunks_ne_u16,
+        time_chunks_ne_u16_unroll,
+        time_full_indexed,
+        time_muck_chunks_unroll,
+        time_into_chunks_unroll,
+        time_wide,
+        time_wide_u16,
+    )
 }
 
 /// Entry point to our bare-metal application.
@@ -112,27 +194,6 @@ fn main() -> ! {
     let mut data = [0u8; 1024];
     small_rng.fill_bytes(&mut data);
 
-    let time_original = time_checksum(&checksum::checksum_original, &data, timer);
-    let time_indexed = time_checksum(&checksum::checksum_indexed, &data, timer);
-    let time_chunks_exact_no_bigchunk = time_checksum(&checksum::checksum_chunks_exact_no_bigchunk, &data, timer);
-    let time_chunks_exact = time_checksum(&checksum::checksum_chunks_exact, &data, timer);
-    let time_sliced_ne = time_checksum(&checksum::checksum_sliced_ne, &data, timer);
-    let time_sliced_ne_sep = time_checksum(&checksum::checksum_sliced_ne_sep, &data, timer);
-    let time_sliced_ne_sep_unroll = time_checksum(&checksum::checksum_sliced_ne_sep_unroll, &data, timer);
-    let time_chunks_ne_sep = time_checksum(&checksum::checksum_chunks_ne_sep, &data, timer);
-    let time_sliced_ne_u16 = time_checksum(&checksum::checksum_sliced_ne_u16, &data, timer);
-    let time_sliced_ne_u16_unroll = time_checksum(&checksum::checksum_sliced_ne_u16_unroll, &data, timer);
-    let time_sliced_ne_u16_unroll_same = time_checksum(&checksum::checksum_sliced_ne_u16_unroll_same, &data, timer);
-    let time_sliced_ne_u16_double_unroll_same = time_checksum(&checksum::checksum_sliced_ne_u16_double_unroll_same, &data, timer);
-    let time_chunks_ne_u16 = time_checksum(&checksum::checksum_chunks_ne_u16, &data, timer);
-    let time_chunks_ne_u16_unroll = time_checksum(&checksum::checksum_chunks_ne_u16_unroll, &data, timer);
-    let time_full_indexed = time_checksum(&checksum::checksum_full_indexed, &data, timer);
-    let time_muck_chunks_unroll = time_checksum(&checksum::checksum_muck_chunks_unroll, &data, timer);
-    let time_into_chunks_unroll =
-        time_checksum(&checksum::checksum_into_chunks_unroll, &data, timer);
-    let time_wide = time_checksum(&checksum::checksum_wide, &data, timer);
-    let time_wide_u16 = time_checksum(&checksum::checksum_wide_u16, &data, timer);
-
     let mut said_hello = false;
     loop {
         // A welcome message at the beginning
@@ -161,52 +222,24 @@ fn main() -> ! {
                 Ok(0) => {
                     // Do nothing
                 }
-                Ok(count) => {
+                Ok(_count) => {
+                    // reboot into bootsel if we received "r"
+                    if buf.contains(&('r' as u8)) {
+                        serial.write_all("rebooting!\r\n".as_bytes()).unwrap();
+                        hal::reboot::reboot(
+                            hal::reboot::RebootKind::BootSel {
+                                picoboot_disabled: false,
+                                msd_disabled: false,
+                            },
+                            hal::reboot::RebootArch::Normal,
+                        );
+                    }
+
                     // Convert to upper case
                     let mut string = heapless::String::<1024>::new();
-                    write!(
-                        &mut string,
-                        "time_original: {}\r\n\
-                        time_indexed: {}\r\n\
-                        time_chunks_exact: {}\r\n\
-                        time_chunks_exact_no_bigchunk: {}\r\n\
-                        time_sliced_ne: {}\r\n\
-                        time_sliced_ne_sep: {}\r\n\
-                        time_sliced_ne_sep_unroll: {}\r\n\
-                        time_chunks_ne_sep: {}\r\n\
-                        time_sliced_ne_u16: {}\r\n\
-                        time_sliced_ne_u16_unroll: {}\r\n\
-                        time_sliced_ne_u16_unroll_same: {}\r\n\
-                        time_sliced_ne_u16_double_unroll_same: {}\r\n\
-                        time_chunks_ne_u16: {}\r\n\
-                        time_chunks_ne_u16_unroll: {}\r\n\
-                        time_full_indexed: {}\r\n\
-                        time_muck_chunks_unroll: {}\r\n\
-                        time_into_chunks_unroll: {}\r\n\
-                        time_wide: {}\r\n\
-                        time_wide_u16: {}\r\n",
-                        time_original,
-                        time_indexed,
-                        time_chunks_exact,
-                        time_chunks_exact_no_bigchunk,
-                        time_sliced_ne,
-                        time_sliced_ne_sep,
-                        time_sliced_ne_sep_unroll,
-                        time_chunks_ne_sep,
-                        time_sliced_ne_u16,
-                        time_sliced_ne_u16_unroll,
-                        time_sliced_ne_u16_unroll_same,
-                        time_sliced_ne_u16_double_unroll_same,
-                        time_chunks_ne_u16,
-                        time_chunks_ne_u16_unroll,
-                        time_full_indexed,
-                        time_muck_chunks_unroll,
-                        time_into_chunks_unroll,
-                        time_wide,
-                        time_wide_u16,
-                    );
+                    time_and_write_string(&data, timer, &mut string).unwrap();
                     use usbd_serial::embedded_io::Write;
-                    serial.write_all(&string.as_bytes());
+                    serial.write_all(&string.as_bytes()).unwrap();
                 }
             }
         }

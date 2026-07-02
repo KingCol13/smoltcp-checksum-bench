@@ -11,7 +11,6 @@ rp235x-hal = {version = "0.4.0", features = ["binary-info", "critical-section-im
 checksum = { path = "../checksum"}
 
 rand = { version = "0.10.1", default-features = false }
-riscv = "0.16.1"
 embedded-hal = "1.0.0"
 heapless = "0.9.3"
 usb-device = "0.3.2"
