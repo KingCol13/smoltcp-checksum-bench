@@ -63,6 +63,7 @@ rustflags = [
     "-C", "link-arg=--nmagic",
     "-C", "link-arg=-Trp235x_riscv.x",
     "-C", "link-arg=-Tdefmt.x",
+    "-C", "target-cpu=rp2350-hazard3",
 ]
 
 # Use picotool for loading.
