@@ -1,0 +1,27 @@
+[package]
+edition = "2024"
+name = "smoltcp-checksum-bench"
+version = "0.1.0"
+
+[dependencies]
+critical-section = {version = "1.2.0"}
+panic-halt = "0.2.0"
+rp235x-hal = {version = "0.4.0", features = ["binary-info", "critical-section-impl", "rt", "defmt"]}
+
+checksum = { path = "../checksum"}
+
+rand = { version = "0.10.1", default-features = false }
+riscv = "0.16.1"
+embedded-hal = "1.0.0"
+heapless = "0.9.3"
+usb-device = "0.3.2"
+usbd-serial = "0.2.2"
+
+[profile.release]
+# s or z opt-level recommended for embedded targets
+# s gives me the best performance for an embassy-based UDP benchmark with
+# smoltcp before checksum optimization
+# https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html
+opt-level = "s"
+# opt-level = 3
+debug = 2
